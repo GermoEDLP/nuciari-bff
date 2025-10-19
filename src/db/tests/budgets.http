@@ -1,0 +1,17 @@
+GET http://localhost:3000/api/v1/health
+
+
+GET http://localhost:3000/api/v1/budgets
+
+
+POST http://localhost:3000/api/v1/budgets
+content-type: application/json
+
+{
+  "clientName": "Acme",
+  "clientEmail": "ventas@acme.com",
+  "items": [{ "sku": "SKU-1", "qty": 3, "unitPrice": 150 }],
+  "notes": "Validez 15 días"
+}
+
+
