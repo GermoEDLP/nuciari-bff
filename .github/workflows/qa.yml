@@ -1,0 +1,48 @@
+name: Deploy to AWS App Runner - QA
+
+on:
+  workflow_dispatch: # Esto permite el despliegue manual
+    inputs:
+      environment:
+        description: 'Choose the environment to deploy'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+
+jobs:
+  deploy-qa:
+    if: github.ref == 'refs/heads/qa' || github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'qa'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Amazon ECR
+        env:
+          # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_QA }}
+          # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_QA }}
+          AWS_REGION: ${{ secrets.AWS_REGION_QA }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_QA }}
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      - name: Build and tag Docker image
+        env:
+          REPOSITORY_NAME: nuciari/bff
+        run: |
+          docker build -t $REPOSITORY_NAME:latest .
+
+      - name: Push Docker image to ECR
+        env:
+          REPOSITORY_NAME: nuciari/bff
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_QA }}
+          AWS_REGION: ${{ secrets.AWS_REGION_QA }}
+        run: |
+          docker tag $REPOSITORY_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY_NAME:latest
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPOSITORY_NAME:latest
+
+      - name: Notify success
+        run: echo "Deployment to AWS App Runner was successful!"
